@@ -1,82 +1,205 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="data:,">
-<title>Sunset Coast — open-world crime game</title>
+<title>Sunset Coast v2 — Palmera Bay Open World</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1c2c;
-    font-family: "Trebuchet MS", Verdana, sans-serif; color: #fff; }
-  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
-    justify-content: center; text-align: center; background: linear-gradient(160deg, rgba(10,20,40,.82), rgba(255,120,40,.45));
-    z-index: 10; }
-  .overlay h1 { font-size: 64px; margin: 0; letter-spacing: 6px; color: #ffd76a;
-    text-shadow: 0 4px 0 #c33, 0 8px 24px #000; }
-  .overlay h2 { font-size: 20px; color: #ffe9b0; margin: 8px 0 4px; font-weight: normal; }
-  .overlay p { max-width: 560px; line-height: 1.5; color: #eaf2ff; }
-  .overlay button { font-size: 20px; padding: 12px 34px; margin: 8px; border: 0; border-radius: 8px;
-    background: #ff7a2f; color: #fff; cursor: pointer; box-shadow: 0 4px 0 #a33d00; }
-  .overlay button:hover { background: #ff8f4d; }
-  .overlay button.secondary { background: #274b73; box-shadow: 0 4px 0 #12283f; }
-  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; display: none; }
-  #hud .panel { position: absolute; background: rgba(8, 18, 32, .72); border-radius: 10px; padding: 8px 12px; }
-  #topleft { top: 12px; left: 12px; }
-  #healthbar { width: 180px; height: 14px; background: #402; border-radius: 7px; overflow: hidden; margin-top: 4px; }
-  #healthfill { height: 100%; width: 100%; background: linear-gradient(90deg, #37d67a, #9be15d); }
-  #cash { font-size: 20px; font-weight: bold; color: #7dff9b; }
-  #stars { top: 12px; right: 12px; font-size: 30px; letter-spacing: 4px; color: #ffd23e;
-    text-shadow: 0 2px 6px #000; }
-  #objective { top: 12px; left: 50%; transform: translateX(-50%); text-align: center; max-width: 520px; }
-  #objective .title { font-size: 15px; font-weight: bold; color: #ffd76a; }
-  #objective .text { font-size: 14px; }
-  #minimap { position: absolute; right: 12px; bottom: 12px; border: 2px solid rgba(255,255,255,.6);
-    border-radius: 8px; background: rgba(8, 18, 32, .8); }
-  #hint { left: 12px; bottom: 12px; font-size: 13px; line-height: 1.6; color: #cfe4ff; }
-  #toast { left: 50%; bottom: 90px; transform: translateX(-50%); font-size: 19px; font-weight: bold;
-    color: #ffe9b0; text-shadow: 0 2px 8px #000; display: none; }
-  #vignette { position: fixed; inset: 0; pointer-events: none; z-index: 4;
-    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.35) 100%); }
-  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; overflow:hidden; background:#1a0f2e;
+    font-family:'Segoe UI', system-ui, -apple-system, sans-serif; color:#fff; }
+  #app { position:fixed; inset:0; }
+  #app canvas { display:block; }
+  .hidden { display:none !important; }
+
+  /* ---------- HUD ---------- */
+  #hud { position:fixed; inset:0; pointer-events:none; z-index:10; }
+  #hudTopLeft { position:absolute; top:14px; left:14px; }
+  #healthWrap { width:220px; background:rgba(10,6,24,.55); border:1px solid rgba(255,255,255,.25);
+    border-radius:8px; padding:8px 10px; backdrop-filter:blur(3px); }
+  #healthLabel { font-size:11px; letter-spacing:2px; color:#ffd9a0; font-weight:700; }
+  #healthBarOuter { height:12px; background:rgba(0,0,0,.55); border-radius:6px; margin-top:4px; overflow:hidden; }
+  #healthBar { height:100%; width:100%; background:linear-gradient(90deg,#ff5f6d,#ffc371); border-radius:6px; transition:width .2s; }
+  #armorRow { margin-top:5px; font-size:11px; color:#cfe8ff; }
+  #rankLine { margin-top:6px; font-size:12px; color:#ffe9b0; font-weight:600; }
+
+  #hudTopRight { position:absolute; top:14px; right:14px; text-align:right; }
+  #money { font-size:26px; font-weight:800; color:#7dff9b; text-shadow:0 2px 6px rgba(0,0,0,.7); }
+  #wanted { margin-top:4px; font-size:26px; letter-spacing:3px; color:#ffd23e;
+    text-shadow:0 0 10px rgba(255,210,62,.8), 0 2px 4px rgba(0,0,0,.8); }
+  #wanted .dim { color:rgba(255,255,255,.22); text-shadow:none; }
+  #repLine { margin-top:2px; font-size:12px; color:#ffb3d9; font-weight:600; }
+
+  #objective { position:absolute; top:14px; left:50%; transform:translateX(-50%);
+    min-width:320px; max-width:520px; text-align:center; }
+  #objectiveInner { background:rgba(10,6,24,.6); border:1px solid rgba(255,210,120,.45);
+    border-radius:10px; padding:8px 14px; backdrop-filter:blur(3px); }
+  #objectiveTitle { font-size:13px; font-weight:800; letter-spacing:1px; color:#ffd23e; }
+  #objectiveText { font-size:13px; color:#fff; margin-top:2px; }
+  #objectiveDist { font-size:12px; color:#9fe8ff; margin-top:2px; font-weight:700; }
+  #missionTimer { font-size:15px; font-weight:800; color:#ff8f8f; margin-top:2px; }
+
+  #minimapWrap { position:absolute; left:14px; bottom:14px; border:2px solid rgba(255,255,255,.35);
+    border-radius:50%; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,.6); background:#0d1526; }
+  #minimap { display:block; border-radius:50%; }
+  #minimapLabel { position:absolute; left:14px; bottom:196px; font-size:11px; letter-spacing:2px;
+    color:rgba(255,255,255,.75); font-weight:700; text-shadow:0 1px 3px #000; }
+
+  #speedo { position:absolute; right:16px; bottom:16px; text-align:right;
+    text-shadow:0 2px 6px rgba(0,0,0,.8); }
+  #speedNum { font-size:44px; font-weight:800; line-height:1; color:#fff; }
+  #speedUnit { font-size:12px; color:#ffd9a0; letter-spacing:2px; }
+  #carName { font-size:13px; color:#9fe8ff; font-weight:700; margin-top:2px; }
+
+  #toast { position:absolute; left:50%; bottom:120px; transform:translateX(-50%);
+    background:rgba(10,6,24,.75); border:1px solid rgba(255,255,255,.3); border-radius:8px;
+    padding:8px 18px; font-size:15px; font-weight:600; opacity:0; transition:opacity .3s;
+    max-width:640px; text-align:center; }
+  #toast.show { opacity:1; }
+  #toast b { color:#ffd23e; }
+  #hint { position:absolute; left:50%; bottom:64px; transform:translateX(-50%);
+    font-size:13px; color:rgba(255,255,255,.85); text-shadow:0 1px 4px #000; text-align:center; }
+  #hint b { color:#ffd23e; }
+  #banner { position:absolute; left:50%; top:32%; transform:translate(-50%,-50%) scale(.9);
+    text-align:center; opacity:0; transition:all .35s; pointer-events:none; }
+  #banner.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+  #bannerTitle { font-size:52px; font-weight:900; letter-spacing:3px; color:#ffd23e;
+    text-shadow:0 0 24px rgba(255,150,50,.9), 0 4px 10px rgba(0,0,0,.8); }
+  #bannerSub { font-size:18px; color:#fff; text-shadow:0 2px 6px #000; margin-top:4px; }
+  #interact { position:absolute; left:50%; top:58%; transform:translateX(-50%);
+    background:rgba(0,0,0,.6); border:1px solid #ffd23e; border-radius:6px; padding:6px 14px;
+    font-size:14px; font-weight:700; color:#ffd23e; }
+
+  /* ---------- Overlays ---------- */
+  .overlay { position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(160deg, rgba(26,8,46,.88), rgba(120,30,60,.82) 55%, rgba(255,120,40,.75));
+    backdrop-filter:blur(2px); }
+  .panel { width:min(680px, 92vw); max-height:92vh; overflow-y:auto; text-align:center; padding:34px 30px;
+    background:rgba(12,6,28,.72); border:1px solid rgba(255,190,90,.5); border-radius:18px;
+    box-shadow:0 20px 60px rgba(0,0,0,.6); }
+  .panel h1 { font-size:46px; letter-spacing:2px; font-weight:900;
+    background:linear-gradient(90deg,#ffd23e,#ff7b54,#ff4d8d); -webkit-background-clip:text;
+    background-clip:text; color:transparent; }
+  .panel h2 { font-size:15px; letter-spacing:4px; color:#ffd9a0; font-weight:700; margin-top:2px; }
+  .panel p { font-size:15px; line-height:1.55; color:#f2e8ff; margin:12px 0; }
+  .panel .story { text-align:left; font-size:14px; background:rgba(255,255,255,.06);
+    border-left:3px solid #ff7b54; padding:12px 14px; border-radius:8px; }
+  .btn { pointer-events:auto; cursor:pointer; display:inline-block; margin:8px 6px 0; padding:13px 30px;
+    font-size:17px; font-weight:800; letter-spacing:1px; color:#1a0f2e; border:none; border-radius:999px;
+    background:linear-gradient(90deg,#ffd23e,#ff9a3d); box-shadow:0 6px 20px rgba(255,150,50,.5); }
+  .btn:hover { filter:brightness(1.1); }
+  .btn.ghost { background:transparent; color:#ffd9a0; border:1px solid rgba(255,217,160,.6); box-shadow:none; }
+  .controls { display:grid; grid-template-columns:1fr 1fr; gap:4px 18px; text-align:left; font-size:13px;
+    margin:14px auto 4px; max-width:520px; }
+  .controls div b { color:#ffd23e; display:inline-block; min-width:86px; }
+  .missionList { text-align:left; font-size:14px; margin:10px auto; max-width:520px; }
+  .missionList li { margin:5px 0; list-style:none; }
+  .missionList li.done { color:#7dff9b; }
+  .missionList li.locked { color:rgba(255,255,255,.45); }
+  .missionList li.active { color:#ffd23e; font-weight:700; }
+  #wastedTitle { color:#ff4d5e !important; background:none; -webkit-text-fill-color:#ff4d5e; }
+  .statGrid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:14px 0; }
+  .statGrid div { background:rgba(255,255,255,.07); border-radius:10px; padding:10px 6px; }
+  .statGrid b { display:block; font-size:22px; color:#ffd23e; }
+  .statGrid span { font-size:11px; letter-spacing:1px; color:#cbb8e8; }
+  #loading { position:fixed; inset:0; z-index:30; display:flex; align-items:center; justify-content:center;
+    background:#1a0f2e; color:#ffd9a0; font-size:18px; letter-spacing:2px; }
 </style>
 <script type="importmap">
 { "imports": { "three": "./vendor/three.module.min.js" } }
 </script>
 </head>
 <body>
-<canvas id="game" aria-label="Sunset Coast: explore the city on foot or by car, take on missions and outrun the police"></canvas>
-<div id="vignette"></div>
-<div id="hud">
-  <div class="panel" id="topleft">
-    <div id="cash">$0</div>
-    <div>REP <span id="rep">Street</span></div>
-    <div id="healthbar"><div id="healthfill"></div></div>
+<div id="loading">LOADING PALMERA BAY…</div>
+<div id="app"></div>
+
+<div id="hud" class="hidden">
+  <div id="hudTopLeft">
+    <div id="healthWrap">
+      <div id="healthLabel">RAY VEGA</div>
+      <div id="healthBarOuter"><div id="healthBar"></div></div>
+      <div id="armorRow">Health <span id="healthNum">100</span> &nbsp;·&nbsp; <span id="vehicleHp"></span></div>
+      <div id="rankLine">Rank: <span id="rankName">Rookie</span></div>
+    </div>
   </div>
-  <div class="panel" id="stars">☆☆☆☆☆</div>
-  <div class="panel" id="objective"><div class="title" id="objtitle">Sunset Coast</div><div class="text" id="objtext"></div></div>
-  <canvas id="minimap" width="180" height="180"></canvas>
-  <div class="panel" id="hint">WASD move &nbsp;·&nbsp; Mouse drag camera &nbsp;·&nbsp; E enter / exit car<br>F punch &nbsp;·&nbsp; Shift sprint &nbsp;·&nbsp; P pause &nbsp;·&nbsp; M mute</div>
-  <div class="panel" id="toast"></div>
+  <div id="hudTopRight">
+    <div id="money">$0</div>
+    <div id="wanted"></div>
+    <div id="repLine">REP 0 &nbsp;·&nbsp; Missions 0/6</div>
+  </div>
+  <div id="objective" class="hidden"><div id="objectiveInner">
+    <div id="objectiveTitle">MISSION</div>
+    <div id="objectiveText"></div>
+    <div id="objectiveDist"></div>
+    <div id="missionTimer" class="hidden"></div>
+  </div></div>
+  <div id="minimapLabel">PALMERA BAY</div>
+  <div id="minimapWrap"><canvas id="minimap" width="180" height="180"></canvas></div>
+  <div id="speedo" class="hidden">
+    <div id="speedNum">0</div><div id="speedUnit">KM/H</div><div id="carName"></div>
+  </div>
+  <div id="toast"></div>
+  <div id="hint"></div>
+  <div id="banner"><div id="bannerTitle"></div><div id="bannerSub"></div></div>
+  <div id="interact" class="hidden"></div>
 </div>
-<div class="overlay" id="start">
-  <h1>SUNSET COAST</h1>
-  <h2>An open-world crime story — ride the coast, take the jobs, dodge the law.</h2>
-  <p>You are <b>Ray Vega</b>, a driver fresh out of luck in the sun-soaked city of <b>Palmera Bay</b>.
-  Your old friend <b>Mara Sol</b> has three jobs for you — and the Palmera Bay Police Department
-  has other plans. Steal cars, run the missions, build your name, and don't get caught.</p>
-  <button id="playBtn">START ENGINE</button>
-  <button id="continueBtn" class="secondary" style="display:none">CONTINUE SAVED GAME</button>
-  <p style="font-size:13px">WASD to move / drive · E to enter a car · F to punch · P to pause · progress saves automatically</p>
+
+<div id="startScreen" class="overlay hidden">
+  <div class="panel">
+    <h1>SUNSET COAST</h1>
+    <h2>PALMERA BAY &nbsp;·&nbsp; AN OPEN-WORLD CRIME STORY</h2>
+    <p class="story">Ray Vega just got out of the garage business and into trouble.
+    Mara Sol runs the jobs in Palmera Bay — deliveries, hot cars, street races and one big score.
+    Drive the sunset city, outrun the Palmera Bay PD, and earn your name on the streets.</p>
+    <div class="statGrid">
+      <div><b>6</b><span>STORY MISSIONS</span></div>
+      <div><b>5★</b><span>WANTED LEVELS</span></div>
+      <div><b>4</b><span>DISTRICTS + BEACH</span></div>
+    </div>
+    <div class="controls">
+      <div><b>W A S D</b> move / drive</div><div><b>Mouse drag</b> orbit camera</div>
+      <div><b>SHIFT</b> sprint / boost</div><div><b>E</b> enter / exit car</div>
+      <div><b>F</b> punch</div><div><b>SPACE</b> handbrake</div>
+      <div><b>P</b> pause</div><div><b>M</b> mute sound</div>
+      <div><b>R</b> restart mission</div><div><b>H</b> honk horn</div>
+    </div>
+    <div id="missionProgress"></div>
+    <button class="btn" id="playBtn">START ENGINE</button>
+    <button class="btn ghost hidden" id="continueBtn">CONTINUE SAVE</button>
+    <p style="font-size:12px;color:#9d8bbd">Free-roam anytime: ignore the missions and just cruise, taxi, race or hunt collectibles.</p>
+  </div>
 </div>
-<div class="overlay" id="pause" style="display:none">
-  <h1>PAUSED</h1>
-  <p>Palmera Bay waits for no one. Well — except right now.</p>
-  <button id="resumeBtn">RESUME</button>
-  <button id="saveBtn" class="secondary">SAVE GAME</button>
-  <button id="restartBtn" class="secondary">RESTART STORY</button>
+
+<div id="pauseScreen" class="overlay hidden">
+  <div class="panel">
+    <h1>PAUSED</h1>
+    <p>Palmera Bay waits for no one. Well — right now it does.</p>
+    <div id="pauseStats" class="statGrid"></div>
+    <button class="btn" id="resumeBtn">RESUME</button>
+    <button class="btn ghost" id="saveBtn">SAVE GAME</button>
+    <button class="btn ghost" id="quitBtn">QUIT TO MENU</button>
+  </div>
 </div>
-<p id="status" role="status" aria-live="polite"></p>
+
+<div id="wastedScreen" class="overlay hidden">
+  <div class="panel">
+    <h1 id="wastedTitle">WASTED</h1>
+    <p id="wastedText">The streets of Palmera Bay got the better of Ray Vega.</p>
+    <div id="wastedStats" class="statGrid"></div>
+    <button class="btn" id="retryBtn">BACK ON THE STREETS</button>
+    <button class="btn ghost" id="wastedMenuBtn">MAIN MENU</button>
+  </div>
+</div>
+
+<div id="missionScreen" class="overlay hidden">
+  <div class="panel">
+    <h1 id="missionScreenTitle">MISSION PASSED</h1>
+    <p id="missionScreenText"></p>
+    <div id="missionScreenStats" class="statGrid"></div>
+    <button class="btn" id="missionNextBtn">KEEP DRIVING</button>
+  </div>
+</div>
+
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>

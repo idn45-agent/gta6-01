@@ -1,33 +1,54 @@
-// save.js — save and load through localStorage. One clear job: persist the
-// player's progress (cash, reputation, health, position, mission) and restore it.
-const SAVE_KEY = 'sunset-coast-save-v1';
+// Save / load for Sunset Coast v2 — localStorage only, no network.
+// Stores money, reputation, completed missions, collected shells and
+// the player's last position. Autosaves after every mission and on
+// page hide; the start screen offers Continue when a save exists.
+const KEY = 'sunsetcoast2-save-v1';
 
-export function saveGame(G) {
-  try {
-    const data = {
-      cash: G.cash, rep: G.rep, health: G.player.health,
-      x: G.player.x, z: G.player.z, angle: G.player.angle,
-      missionIndex: G.missionIndex, wanted: G.police.wanted,
-      rivalsDown: G.missionRivalsDown || 0,
-      savedAt: Date.now(),
-    };
-    window.localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-    return true;
-  } catch { return false; }
+export const RANKS = ['Rookie', 'Hustler', 'Wheelman', 'Street Boss', 'King of Palmera'];
+
+export function rankFor(rep) {
+  if (rep >= 2400) return RANKS[4];
+  if (rep >= 1500) return RANKS[3];
+  if (rep >= 800) return RANKS[2];
+  if (rep >= 300) return RANKS[1];
+  return RANKS[0];
 }
 
-export function loadGame() {
+export function defaultSave() {
+  return {
+    money: 250,
+    rep: 0,
+    missionsDone: [],      // mission ids, in order
+    shells: [],            // collected shell indices
+    taxiDone: 0,
+    racesWon: 0,
+    totalEarned: 0,
+    position: { x: 20, z: 40 },
+    createdAt: Date.now(),
+  };
+}
+
+export function loadSave() {
   try {
-    const raw = window.localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    if (typeof data.cash !== 'number' || typeof data.x !== 'number') return null;
-    return data;
-  } catch { return null; }
+    if (typeof data.money !== 'number') return null;
+    return { ...defaultSave(), ...data };
+  } catch (e) {
+    return null;
+  }
 }
 
-export function hasSave() { return loadGame() !== null; }
+export function writeSave(data) {
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ ...data, savedAt: Date.now() }));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
 
 export function clearSave() {
-  try { window.localStorage.removeItem(SAVE_KEY); } catch { /* storage unavailable */ }
+  try { localStorage.removeItem(KEY); } catch (e) {}
 }

@@ -1,76 +1,88 @@
-// combat.js — fist fights and vehicle ramming. One clear job: hurting people
-// (pedestrians, rivals, police) and taking damage back.
-import { addHeat } from './police.js';
+// Combat for Sunset Coast v2 — fists on foot, ramming in a car.
+// Punching a pedestrian or a cop is a crime (wanted +1, +2 for a cop).
+// Ramming pedestrians or police cars at speed is a crime too, and
+// damages the player's car and health.
+import { dist2d } from './util.js';
 
-// The player's punch: nearest living person within 2.2 units takes 34 damage.
-// Knocking someone out is a crime; knocking out a mission rival counts toward the mission.
-export function punch(G) {
-  const now = performance.now();
-  if (now - G.lastPunch < 450) return false;
-  G.lastPunch = now;
-  G.audio.punch();
-  let hit = null, bestD = 2.4;
-  for (const ped of G.peds) {
-    if (!ped.alive) continue;
-    const d = Math.hypot(ped.x - G.player.x, ped.z - G.player.z);
-    if (d < bestD) { bestD = d; hit = ped; }
+export class Combat {
+  constructor(ctx) {
+    this.ctx = ctx; // { player, traffic, police, audio, toast, effects }
+    this.hitCooldown = 0;
   }
-  if (!hit) return false;
-  hit.health -= 34;
-  hit.x += (hit.x - G.player.x) * 0.4;
-  hit.z += (hit.z - G.player.z) * 0.4;
-  if (hit.health <= 0) {
-    hit.alive = false;
-    hit.mesh.visible = false;
-    if (hit.hostile) {
-      G.missionRivalsDown = (G.missionRivalsDown || 0) + 1;
-      G.toast('Rival down!');
-      G.audio.cash();
-    } else {
-      addHeat(G.police, 25, G.toast);
-      G.toast('You knocked out a bystander — the cops noticed!');
+
+  update(dt) {
+    this.hitCooldown -= dt;
+    const { player, traffic, police, audio } = this.ctx;
+    if (player.inVehicle) {
+      this.updateCarImpacts(dt);
+      return;
+    }
+    // on-foot punch
+    if (player.punchTimer > 0 && this.hitCooldown <= 0) {
+      // punch pedestrians
+      for (const ped of traffic.peds) {
+        if (ped.dead) continue;
+        if (player.punchHits(ped.x, ped.z)) {
+          ped.knockDown();
+          audio.punch();
+          this.ctx.effects.burst(ped.x, 1.2, ped.z, 0xffe9a8, 8);
+          police.addWanted(1, 'assault');
+          this.ctx.toast('You decked a pedestrian! The cops noticed.', 2.5);
+          this.hitCooldown = 0.4;
+          return;
+        }
+      }
+      // punch cops
+      for (const cop of police.cops) {
+        if (cop.dead) continue;
+        if (player.punchHits(cop.x, cop.z, 3.2)) {
+          cop.damage(25);
+          audio.punch();
+          this.ctx.effects.burst(cop.x, 1.2, cop.z, 0x9fe8ff, 8);
+          police.addWanted(2, 'assault officer');
+          this.ctx.toast('You punched a cop! That was bold.', 2.5);
+          this.hitCooldown = 0.4;
+          return;
+        }
+      }
     }
   }
-  return true;
-}
 
-// Driving into a pedestrian knocks them down and raises the wanted level.
-export function checkVehicleHits(G) {
-  if (!G.player.car) return;
-  const car = G.player.car;
-  for (const ped of G.peds) {
-    if (!ped.alive) continue;
-    const d = Math.hypot(ped.x - car.x, ped.z - car.z);
-    if (d < 2.0) {
-      ped.alive = false;
-      ped.mesh.visible = false;
-      ped.x += Math.sin(car.angle) * 6;
-      ped.z += Math.cos(car.angle) * 6;
-      addHeat(G.police, 25, G.toast);
-      G.audio.crash();
-      G.toast('You hit a pedestrian!');
+  updateCarImpacts(dt) {
+    const { player, traffic, police, audio } = this.ctx;
+    const car = player.inVehicle;
+    if (!car || Math.abs(car.speed) < 6) return;
+    const speed = Math.abs(car.speed);
+    // hit pedestrians
+    for (const ped of traffic.peds) {
+      if (ped.dead) continue;
+      if (dist2d(car.x, car.z, ped.x, ped.z) < 2.4) {
+        ped.knockDown();
+        car.damage(4);
+        audio.thud(1);
+        this.ctx.effects.burst(ped.x, 1.2, ped.z, 0xffe9a8, 10);
+        police.addWanted(1, 'hit pedestrian');
+        this.ctx.toast('You hit a pedestrian!', 2);
+      }
     }
-  }
-}
-
-// Bumping traffic cars at speed damages the player's car handling and the player.
-export function checkCarCollisions(G) {
-  if (!G.player.car) return;
-  const car = G.player.car;
-  for (const other of G.cars) {
-    if (other === car || other.police) continue;
-    const d = Math.hypot(other.x - car.x, other.z - car.z);
-    if (d < 3.2 && Math.abs(car.speed) > 6) {
-      car.speed *= 0.4;
-      G.player.health = Math.max(0, G.player.health - 4);
-      G.audio.crash();
+    // ram traffic cars
+    for (const other of traffic.cars) {
+      if (other === car || other.dead) continue;
+      if (car.bump(other, 1)) {
+        audio.thud(0.8);
+        this.ctx.effects.burst((car.x + other.x) / 2, 1, (car.z + other.z) / 2, 0xffb36b, 10);
+        if (other.driver === 'traffic' && speed > 18) police.addWanted(1, 'reckless driving');
+      }
     }
-  }
-}
-
-// The player regenerates a little health when calm and out of trouble.
-export function regenHealth(G, dt) {
-  if (G.police.wanted === 0 && G.player.health > 0 && G.player.health < 100) {
-    G.player.health = Math.min(100, G.player.health + 1.5 * dt);
+    // ram police cars
+    for (const cop of police.cops) {
+      if (cop.dead) continue;
+      if (car.bump(cop, 1.2)) {
+        audio.thud(1);
+        this.ctx.effects.burst((car.x + cop.x) / 2, 1, (car.z + cop.z) / 2, 0x9fe8ff, 12);
+        police.addWanted(2, 'rammed police');
+        this.ctx.toast('You rammed a police car!', 2);
+      }
+    }
   }
 }

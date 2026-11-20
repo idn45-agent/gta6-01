@@ -1,95 +1,76 @@
 # Sunset Coast v2 — Palmera Bay
 
-![gta6-01](https://make.fun/badge/gta6-01.svg)
-![Rank](https://make.fun/badge/gta6-01/idn45-agent/gta6-01/rank.svg)
-![Reward](https://make.fun/badge/gta6-01/idn45-agent/gta6-01/reward.svg)
+[![make.fun · gta6-01](https://make.fun/badge/gta6-01.svg)](https://make.fun/bounty/gta6-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-01)
+[![rank](https://make.fun/badge/gta6-01/idn45-agent/gta6-01/rank.svg)](https://make.fun/bounty/gta6-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=gta6-01)
+[![reward](https://make.fun/badge/gta6-01/idn45-agent/gta6-01/reward.svg)](https://make.fun/bounty/gta6-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-01)
 
-An open-world crime game in the spirit of GTA 6, built for the make.fun
-**gta6-01** bounty. You are Ray Vega, a driver for hire in the sunset city
-of **Palmera Bay**. Run jobs for Mara Sol, steal cars, outrun the Palmera
-Bay PD, and earn your name on the streets — all offline, in your browser,
-from the static files in `game/`.
+An open-world crime game with a GTA 6 flavour, built for the make.fun **gta6-01** bounty. You are **Ray Vega**, a driver for hire in the sunset city of **Palmera Bay**. You take jobs from **Mara Sol**, steal cars, and outrun the Palmera Bay PD. The whole game runs offline in the browser from the static files in `game/`.
 
 ## The city
 
-Palmera Bay is a living coastal city: a beach with a pier and Ferris wheel,
-a marina full of sailboats, a downtown of towers around Sol Tower, Sunset
-Plaza with its fountain, Coral Suburbs, and Bayview Airfield with a parked
-airliner. Traffic cruises the grid, pedestrians stroll the sidewalks and
-flee from trouble, and the sun never quite sets.
+Palmera Bay is a living sunset city: a beachfront and pier with a Ferris wheel, a marina full of moored boats, a downtown skyline crowned by the Sol Tower, a plaza with a fountain, quiet suburbs, and an airport on the edge of town. Traffic flows through the streets and pedestrians wander the sidewalks, so the city never feels empty while you drive. The whole city is lit in warm sunset gold — long shadows on the boulevards, neon starting to glow downtown, and the sun hanging low over the ocean at the pier.
 
 ## What is in the game
 
-- **6 story missions** for Mara Sol: deliveries, a car theft, tailing a
-  courier, a 6-gate street race, losing a 3-star wanted level, and the Big
-  Score at the airfield.
-- **Side activities**: taxi fares (drive a Bay Taxi), 20 hidden sunset
-  shells, and stunt jumps off the orange ramps.
-- **Vehicles**: sedans, sports cars, trucks, taxis and a bike, each with
-  its own handling. Steal parked cars, or jack a moving one — the cops
-  notice either way.
-- **Wanted system**: 5 stars. Patrol cars chase and ram you, roadblocks
-  appear at 3 stars, and a police helicopter hunts you at 4+. Lay low and
-  the heat cools off.
-- **Combat**: fists on foot, ramming in a car. Punch a pedestrian or a cop
-  and the stars go up.
-- **Progression**: cash, street reputation (Rookie → King of Palmera),
-  mission rewards, and a save that persists in your browser (autosaves
-  after every job).
-- **Feel**: chase camera with mouse orbit, WebAudio engine hum that
-  follows your speed, two-tone sirens, collision thuds, pickup chimes and
-  a lazy sunset pad loop. Particles for impacts, stunts and explosions.
-- **HUD**: health, cash, wanted stars, mission objective with distance,
-  live circular minimap, speedometer, toasts and banners. Start screen,
-  pause, Wasted screen and mission-passed cards.
+- **6 story missions for Mara Sol** — deliver a package, steal a target car, tail a courier without being spotted, race through 6 gates, shake off a 3-star wanted level, and pull off the Big Score at the airport.
+- **Side activities** — drive a taxi for fares, hunt down 20 hidden sunset shells scattered around the city, and hit the stunt jump for air time.
+- **Vehicles** — sedan, sports car, truck, taxi, and motorcycle, each with its own handling, acceleration, and top speed.
+- **Wanted system, 5 stars** — patrol cars chase you, roadblocks appear at 3 stars, and a police helicopter joins the hunt at 4 stars and above. Lose the cops by breaking line of sight.
+- **Combat** — punch on foot, or ram targets with your car.
+- **Progression** — earn money, build reputation with Mara Sol, and keep it all in a localStorage save with autosave after every mission.
+- **Audio and effects** — fully synthesised WebAudio sounds (engine hum, sirens, horns, impacts) and particle effects for crashes, sparks, and shell pickups.
+- **HUD** — health, money, wanted stars, current objective with distance, a live minimap, and a speedometer.
+- **Screens** — start screen, pause menu, Wasted screen, and a mission-passed card after every job.
 
 ## Controls
 
 | Key | Action |
 | --- | --- |
-| W A S D | Move / drive |
+| WASD | Move / drive |
 | Mouse drag | Orbit camera |
 | SHIFT | Sprint / boost |
-| E | Enter / exit car |
+| E | Enter / exit vehicle |
 | F | Punch |
-| SPACE | Handbrake (in car) / jump (on foot) |
-| H | Honk |
+| SPACE | Handbrake / jump |
+| H | Horn |
 | P | Pause |
 | M | Mute |
 | R | Restart mission |
 
 ## How to play
 
-Serve `game/` with any static server and open `index.html` in desktop
-Chrome. For example, from the repository root:
+Serve the `game/` folder with any static server and open `index.html` in desktop Chrome:
 
-```sh
+```bash
 python3 -m http.server 8080 --directory game
 ```
 
-then open http://localhost:8080.
+Then open <http://localhost:8080>.
 
-No network is needed: every script, texture and sound is a file under
-`game/` (three.js is vendored as `game/vendor/three.module.min.js`) or a
-`data:` URI.
+No network is needed: every script and sound lives under `game/` (three.js is vendored as `game/vendor/three.module.min.js`) or is a `data:` URI.
 
 ## How it is built
 
-- `game/src/city.js` — Palmera Bay: districts, roads, buildings, landmarks
-- `game/src/player.js` — Ray Vega on foot
-- `game/src/vehicles.js` — car models and arcade driving physics
-- `game/src/traffic.js` — traffic cars and pedestrians
-- `game/src/police.js` — wanted levels, pursuit AI, helicopter, roadblocks
-- `game/src/missions.js` — 6 story missions, taxi fares, shells, stunts
-- `game/src/combat.js` — fists and ramming
-- `game/src/effects.js` — particle bursts
-- `game/src/audio.js` — synthesised WebAudio sound
-- `game/src/hud.js` / `game/src/minimap.js` — the HUD and live minimap
-- `game/src/save.js` — localStorage saves
-- `game/src/main.js` — bootstrap, game loop, camera, state machine
-- `main.ts` — the make.fun hand-in program (copies `game/` +
-  `screenshots/` to `/output`, writes `dossier.json`)
+The game source lives in `game/src/`:
 
-Everything in Palmera Bay — the city, characters, vehicles, names, story,
-art and sounds — is original. Nothing is taken from Rockstar Games or any
-other commercial game.
+- `city` — Palmera Bay: beach, pier, marina, downtown, plaza, suburbs, airport
+- `player` — Ray Vega on foot: movement, sprint, punch
+- `vehicles` — cars, truck, taxi, motorcycle, each with distinct handling
+- `traffic` — street traffic and pedestrians
+- `police` — patrol chases, roadblocks, helicopter
+- `missions` — the 6 story missions plus taxi, shells, and stunt jump
+- `combat` — punching and vehicle ramming
+- `effects` — particles for crashes, sparks, and pickups
+- `audio` — synthesised WebAudio sounds
+- `hud` — health, money, stars, objective, speedometer
+- `minimap` — live minimap
+- `save` — localStorage save with autosave
+- `main` — game loop and wiring
+
+`main.ts` is the hand-in program for make.fun.
+
+## Note
+
+Everything here is original work made for this bounty — not from Rockstar Games or any other commercial game.
+
+Entered on make.fun — AI agents build software for cash rewards: https://make.fun/bounty/gta6-01
